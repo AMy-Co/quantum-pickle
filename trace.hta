@@ -1,0 +1,121 @@
+<html>
+<head><title>Quantum Pickle</title>
+<HTA:APPLICATION ID="oHTA";
+  APPLICATIONNAME="Traceroute";
+  BORDER="thin";
+  BORDERSTYLE="normal";
+  SINGLEINSTANCE="no";
+>
+</head>
+
+<body bgcolor="#E8E8E8" >
+<font size=2 face="Arial" color="black">
+
+<script language="VBScript" type="text/vbscript">
+set WshShell = CreateObject("WScript.Shell")
+Dim procIP
+Dim strLogFileName
+
+strOut=""
+
+Sub traceroute
+shell_command="%comspec% /c tracert.exe " & ip_address.value
+set objExCmd = WshShell.Exec(shell_command)
+
+strOut=objExCmd.StdOut.ReadAll
+
+Set regEx = New RegExp
+regEx.Pattern = "[\f\n\r\v]+"
+regEx.Global = True
+regEx.Multiline = True
+strOut = regEx.Replace(strOut, "<br>")
+trace_output.innerHTML= "<b>Traceroute Output: </b>" & strOut
+
+ip_start = (InStrRev(strOut,"[") + 1) ' find last [ and move right 1
+ip_end = (InStrRev(strOut,"]") - 1 ) ' find the last ] bracket and move left 1
+ip_length = (ip_end - ip_start + 1)
+procIP = Mid(strOut,ip_start,ip_length)
+'proc_ip.innerHTML= "Start IP Pos: " & ip_start & " End IP Pos: " & ip_end & " IP length: " & ip_length & " IP: " & procIP
+'proc_ip.innerHTML= "<b>The processor IP Seems to be: </b><font color='#00ff00'>" & procIP & "</font>"
+'start_over.innerHTML= "<INPUT TYPE='button' onClick='history.go(0)' VALUE='Start Over'>"
+start_telnet.innerHTML= "<p>Proc IP: <input type='text' size='40' id='proc_ip_address' value='" & procIP & "'><input type='submit' value='Start Telnet'  onclick='telnet'></p>"
+
+End sub
+
+
+Sub telnet
+strUserPath = WshShell.ExpandEnvironmentStrings("%userprofile%")
+strSafeDate = DatePart("yyyy",Date) & Right("0" & DatePart("m",Date), 2) & Right("0" & DatePart("d",Date), 2)
+strSafeTime = Right("0" & Hour(Now), 2) & Right("0" & Minute(Now), 2) & Right("0" & Second(Now), 2)
+'Set strDateTime equal to a string representation of the current date and time, for use as part of a valid Windows filename
+strDateTime = strSafeDate & "-" & strSafeTime
+'Assemble the path and filename
+strLogFileName = strUserPath & "\Desktop\" & strDateTime & ".mp"
+
+
+msgBox "Your entire telnet session will be saved here: " & strLogFileName, vbOKOnly+vbInformation+vbDefaultButton1, "Info!"
+msgBox "Initiating telnet Session with: " & procIP, vbOKOnly+vbInformation+vbDefaultButton1, "Hands Off!"
+
+WshShell.run ("cmd.exe")
+Delay 1
+'Send commands to the window as needed - IP and commands need to be customized
+'Step 1 - Telnet to remote IP'
+
+WshShell.SendKeys "telnet -f " & strLogFileName & " " & procIP & " 23"
+WshShell.SendKeys ("{Enter}")
+Delay 1
+'Step 2 - Issue Commands with pauses'
+WshShell.SendKeys "eng"
+
+WshShell.SendKeys ("{Enter}")
+Delay 1
+WshShell.SendKeys "eng1"
+WshShell.SendKeys ("{Enter}")
+Delay 1
+WshShell.SendKeys "PRINTCONNECTEDDEVICES"
+
+WshShell.SendKeys ("{Enter}")
+Delay 1
+'Step 3 - Exit Command Window
+
+'WshShell.SendKeys "exit"
+'WshShell.SendKeys ("{Enter}")
+'WScript.Quit 
+End sub
+
+Sub telnetOutput
+	shell_command="%comspec% /c type " & strLogFileName
+	set objExCmd = WshShell.Exec(shell_command)
+	strOut=objExCmd.StdOut.ReadAll
+	telnet_output.innerHTML= "<b>TELNET SESSION OUTPUT FILE: </b> <font color ='0000ff'>" & strLogFileName & "</font><hr noshode color='#000000'><br>" & strOut
+End Sub
+
+Sub Delay( seconds )
+	Dim wshShell, strCmd
+	Set wshShell = CreateObject( "WScript.Shell" )
+	strCmd = "%COMSPEC% /C (PING -n " & ( seconds + 1 ) & " 127.0.0.1 >NUL 2>&1 || PING -n " & seconds & " ::1 >NUL 2>&1)"
+	wshShell.Run strCmd, 0, 1
+	Set wshShell = Nothing
+End Sub
+
+</script>
+<div id = "nav_bar">
+<input TYPE='button' id = 'nav_bar1' onClick='history.go(0)' value='Reset'>
+<input type='button' id= 'nav_bar2' onclick='telnetOutput' value='Poll Telnet Output'>
+</div>
+<p><b>TRACEROUTE</b><hr noshode color="#000000"><br>
+
+    <p>Hostname: <input type="text" size="40" id="ip_address" value="224.0.37.42">
+    <input type="submit" name="B1" value="Submit"  onclick="traceroute"></p>
+<div id=proc_ip></div>
+<br / >
+<div id=trace_output></div>
+<div id=start_over></div>
+<div id=start_telnet></div>
+<BR>
+<div id=telnet_output></div>
+
+<!--
+	if (window.resizeTo) self.resizeTo(600,400);
+//-->
+</script>
